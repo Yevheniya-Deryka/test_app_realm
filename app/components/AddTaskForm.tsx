@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -6,45 +6,128 @@ import {
   Pressable,
   Platform,
   StyleSheet,
+  Keyboard,
 } from 'react-native';
 
-import {buttonStyles} from '../styles/button';
+import { buttonStyles } from '../styles/button';
 import colors from '../styles/colors';
-import {shadows} from '../styles/shadows';
+import { shadows } from '../styles/shadows';
+import { textStyles } from '../styles/text';
+import { Priority } from '../types/Priority';
+import DropDownPicker from 'react-native-dropdown-picker';
 
 type AddTaskFormProps = {
-  onSubmit: (description: string) => void;
+  onSubmit: (description: string, priorityValue: number) => void;
 };
 
-export const AddTaskForm: React.FC<AddTaskFormProps> = ({onSubmit}) => {
-  const [description, setDescription] = useState('');
+const priorityValues = [
+  { label: 'Low', value: Priority.Low },
+  { label: 'Medium', value: Priority.Medium },
+  { label: 'High', value: Priority.High },
+];
 
-  const handleSubmit = () => {
-    onSubmit(description);
+export const AddTaskForm: React.FC<AddTaskFormProps> = ({ onSubmit }) => {
+  const [description, setDescription] = useState('');
+  const [priorityOpen, setPriorityOpen] = useState(false);
+  const [priorityValue, setPriorityValue] = useState<number | null>(null);
+  const [priorityOptions, setPriorityOptions] = useState(priorityValues);
+  const [hasPriorityError, setHasPriorityError] = useState(false);
+  const [hasDescriptionError, setHasDescriptionError] = useState(false);
+
+  const handleDescriptionChange = useCallback((value: string) => {
+    setDescription(value);
+    setHasDescriptionError(false);
+  }, []);
+
+  const handleSubmit = useCallback(() => {
+    if (!priorityValue) {
+      setHasPriorityError(true);
+    }
+
+    if (!description) {
+      setHasDescriptionError(true);
+    }
+
+    if (!priorityValue || !description) {
+      return;
+    }
+
+    onSubmit(description, priorityValue);
     setDescription('');
-  };
+    setPriorityValue(null);
+    Keyboard.dismiss();
+  }, [priorityValue, description]);
 
   return (
-    <View style={styles.form}>
-      <TextInput
-        value={description}
-        placeholder="Enter new task description"
-        onChangeText={setDescription}
-        autoCorrect={false}
-        autoCapitalize="none"
-        style={styles.textInput}
-      />
-      <Pressable onPress={handleSubmit} style={styles.submit}>
-        <Text style={styles.icon}>＋</Text>
-      </Pressable>
+    <View>
+      <Text style={styles.formTitle}>Add new task:</Text>
+
+      <View>
+        <DropDownPicker
+          open={priorityOpen}
+          value={priorityValue}
+          items={priorityOptions}
+          setOpen={setPriorityOpen}
+          setValue={setPriorityValue}
+          setItems={setPriorityOptions}
+          onChangeValue={() => {
+            setHasPriorityError(false);
+          }}
+          placeholder='Choose task priority...'
+          style={[
+            styles.priorityContainer,
+            hasPriorityError && styles.priorityError,
+          ]}
+          placeholderStyle={styles.priorityPlaceholder}
+          labelStyle={styles.priorityText}
+          textStyle={styles.priorityText}
+        />
+      </View>
+      
+      <View style={styles.descriptionContainer}>
+        <TextInput
+          value={description}
+          placeholder='Enter your task description...'
+          onChangeText={handleDescriptionChange}
+          autoCorrect={false}
+          autoCapitalize='none'
+          style={[
+            styles.textInput,
+            hasDescriptionError && styles.textInputError,
+          ]}
+        />
+        <Pressable onPress={handleSubmit} style={styles.submit}>
+          <Text style={styles.icon}>＋</Text>
+        </Pressable>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  form: {
+  formTitle: {
+    ...textStyles.paragraph,
+    textAlign: 'left',
+  },
+  priorityContainer: {
+    borderColor: 'transparent',
+    marginBottom: 15,
+  },
+  priorityError: {
+    borderColor: 'red',
+  },
+  priorityPlaceholder: {
+    fontSize: 17,
+    paddingHorizontal: 5,
+    color: colors.gray,
+  },
+  priorityText: {
+    fontSize: 17,
+    paddingHorizontal: 5,
+  },
+  descriptionContainer: {
     height: 50,
-    marginBottom: 20,
+    marginBottom: 25,
     flexDirection: 'row',
     ...shadows,
   },
@@ -55,6 +138,10 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: colors.white,
     fontSize: 17,
+  },
+  textInputError: {
+    borderWidth: 1,
+    borderColor: 'red',
   },
   submit: {
     ...buttonStyles.button,

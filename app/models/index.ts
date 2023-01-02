@@ -3,4 +3,5 @@ import {Task} from './Task';
 
 export const TaskRealmContext = createRealmContext({
   schema: [Task],
+  deleteRealmIfMigrationNeeded: true,
 });

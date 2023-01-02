@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import Realm from 'realm';
-import {View, Text, Pressable, StyleSheet} from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 
-import {shadows} from '../styles/shadows';
+import { shadows } from '../styles/shadows';
 import colors from '../styles/colors';
-import {Task} from '../models/Task';
+import { Task } from '../models/Task';
+import { Priority } from '../types/Priority';
 
 type TaskItemProps = {
   task: Task & Realm.Object;
@@ -12,13 +13,33 @@ type TaskItemProps = {
   onDelete: () => void;
 };
 
+function getTaskBackgroundColor(task: Task & Realm.Object): string {
+  if (task.isComplete) {
+    return colors.green;
+  }
+
+  switch (task.priority) {
+    case Priority.Low:
+      return colors.yellow;
+    case Priority.Medium:
+      return colors.orange;
+    case Priority.High:
+      return colors.red;
+    default:
+      return colors.white;
+  }
+}
+
 export const TaskItem = React.memo<TaskItemProps>(
-  ({task, onToggleStatus, onDelete}) => {
+  ({ task, onToggleStatus, onDelete }) => {
+    const itemContainerBackground = getTaskBackgroundColor(task);
+
     return (
-      <View style={styles.task}>
+      <View style={[styles.task, { backgroundColor: itemContainerBackground }]}>
         <Pressable
           onPress={onToggleStatus}
-          style={[styles.status, task.isComplete && styles.completed]}>
+          style={[styles.status, task.isComplete && styles.completed]}
+        >
           <Text style={styles.icon}>{task.isComplete ? '✓' : '○'}</Text>
         </Pressable>
         <View style={styles.descriptionContainer}>
@@ -31,7 +52,7 @@ export const TaskItem = React.memo<TaskItemProps>(
         </Pressable>
       </View>
     );
-  },
+  }
 );
 
 const styles = StyleSheet.create({
@@ -40,7 +61,6 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     flexDirection: 'row',
     marginVertical: 8,
-    backgroundColor: colors.white,
     borderRadius: 5,
     ...shadows,
   },
